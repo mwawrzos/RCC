@@ -4,6 +4,7 @@
 #include <fstream>
 #include <streambuf>
 
+#include <array>
 #include <sstream>
 #include <vector>
 #include <memory>

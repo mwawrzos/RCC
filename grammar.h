@@ -1,3 +1,5 @@
+#pragma once
+
 enum class ID
 {
 	REF,
@@ -5,18 +7,26 @@ enum class ID
 	MINUS,
 	MUL,
 	DIV,
-	MOD
+	MOD,
+	OPAR,
+	CPAR,
+	MODE,
+	FE
 };
 
 enum class TYPES
 {
 	NUMBER,
 	LABEL,
-	ERROR
+	ERROR,
+	MODE
 };
 
 #define MOV_CONSTR(A, B, FIELD) public : A(std::unique_ptr<B> &arg) : FIELD(std::move(arg)) {}
 #define FIELD(T1, T2, NAME) std::unique_ptr<T2> NAME; MOV_CONSTR(T1, T2, NAME)
+
+#define TYPE(NAME) class NAME { protected: NAME(); };
+#define CONST(TYPE, CONT, NAME) class TYPE##NAME { FIELD(TYPE##NAME, CONT, val); };
 
 class Token {};
 
@@ -24,25 +34,15 @@ typedef int WholeNumber;
 
 class Number
 {
-	unsigned int value;
+	WholeNumber value;
 public:
-	Number(unsigned int value) : value(value) {}
+	Number(unsigned int value);
 };
 class PositiveNumber : Number {};
 class NegativeNumber : Number {};
 
-class Label : public Token
-{
-	std::string name;
-public:
-	Label(std::string &&name) : name(name) {}
-};
-
-class Term
-{
-protected:
-	Term();
-};
+typedef std::string Label;
+TYPE(Term);
 
 class Expr
 {
@@ -63,18 +63,9 @@ EXPR(Mul)
 EXPR(Div)
 EXPR(Mod)
 
-class TermLab : public Term
-{
-	FIELD(TermLab, Label, label)
-};
-class TermNum : public Term
-{
-	FIELD(TermNum, Number, number)
-};
-class TermPar : public Term
-{
-	FIELD(TermPar, Expr, expr)
-};
+CONST(Term, Label, Label);
+CONST(Term, Number, Number);
+CONST(Term, Expr, Parenthies);
 
 enum class Mode
 {
@@ -148,16 +139,16 @@ protected:
 };
 class InstructionTwoArg : public Instruction
 {
-	std::unique_ptr<Mode> mode1;
+	Mode                  mode1;
 	std::unique_ptr<Expr> expr1;
-	std::unique_ptr<Mode> mode2;
+	Mode                  mode2;
 	std::unique_ptr<Expr> expr2;
 public:
 	InstructionTwoArg(std::unique_ptr<LabelList> &labelList,
 		std::unique_ptr<Operation> &operation,
-		std::unique_ptr<Mode>      &mode1,
+		Mode                       &mode1,
 		std::unique_ptr<Expr>      &expr1,
-		std::unique_ptr<Mode>      &mode2,
+		Mode                       &mode2,
 		std::unique_ptr<Expr>      &expr2,
 		std::unique_ptr<Comment>   &comment)
 		:
@@ -169,17 +160,17 @@ public:
 };
 class InstructionOneArg : public Instruction
 {
-	std::unique_ptr<Mode> mode;
+	Mode                  mode;
 	std::unique_ptr<Expr> field;
 public:
 	InstructionOneArg(std::unique_ptr<LabelList> &labelList,
 		std::unique_ptr<Operation> &operation,
-		std::unique_ptr<Mode>      &mode,
-		std::unique_ptr<Expr>      &field1,
+		Mode                       &mode,
+		std::unique_ptr<Expr>      &field,
 		std::unique_ptr<Comment>   &comment)
 		:
 		Instruction(labelList, operation, comment),
-		mode(std::move(mode)),
+		mode(mode),
 		field(std::move(field)) {}
 };
 

@@ -24,6 +24,12 @@
     <ClInclude Include="grammar.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="scanner.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="symbolArray.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="error.cpp">
@@ -32,10 +38,13 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="grammar.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="scaner.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="grammar.cpp">
+    <ClCompile Include="symbolArray.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

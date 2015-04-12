@@ -8,7 +8,7 @@ enum class ERROR
 class Error
 {
 public:
-	std::string mkError(ERROR type, std::string message, unsigned int line, unsigned int column);
+	std::string mkError(ERROR type, std::string &message, unsigned int line, unsigned int column);
 
 	std::string file = "";
 };

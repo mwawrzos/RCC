@@ -3,7 +3,7 @@
 #include "error.h"
 
 
-std::string Error::mkError(ERROR type, std::string value, unsigned int line, unsigned int column)
+std::string Error::mkError(ERROR type, std::string &value, unsigned int line, unsigned int column)
 {
 	std::stringstream ss(file);
 
