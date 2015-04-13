@@ -2,6 +2,7 @@
 
 enum class ID
 {
+	OPC,
 	REF,
 	PLUS,
 	MINUS,
@@ -11,7 +12,8 @@ enum class ID
 	OPAR,
 	CPAR,
 	MODE,
-	FE
+	FE,
+	MODYFIERS
 };
 
 enum class TYPES
@@ -38,8 +40,15 @@ class Number
 public:
 	Number(unsigned int value);
 };
-class PositiveNumber : Number {};
-class NegativeNumber : Number {};
+class PositiveNumber : Number 
+{
+public:
+	PositiveNumber(unsigned int val) : Number(val) {}
+};
+class NegativeNumber : Number
+{
+	NegativeNumber(unsigned int val) : Number(val) {}
+};
 
 typedef std::string Label;
 TYPE(Term);

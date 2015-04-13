@@ -14,3 +14,13 @@
 #include <unordered_map>
 
 #include <chrono>
+
+#include <functional>
+
+class ScopeGuard
+{
+	std::function<void()> exit;
+public:
+	ScopeGuard(std::function<void()> exit, std::function<void()> enter = [] {}) : exit(exit) { enter(); }
+	~ScopeGuard() { exit(); }
+};

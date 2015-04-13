@@ -40,8 +40,42 @@ int main(int argc, char **argv)
 		case ID::OPAR: std::cout << "("; break;
 		case ID::REF: std::cout << (*sa)[std::get<1>(t)]; break;
 		case ID::MODE: std::cout << (char)(std::get<1>(t)); break;
+		case ID::MODYFIERS:
+			switch (static_cast<Modifier>(std::get<1>(t)))
+			{
+			case Modifier::A: std::cout << ".A"; break;
+			case Modifier::AB: std::cout << ".AB"; break;
+			case Modifier::B: std::cout << ".B"; break;
+			case Modifier::BA: std::cout << ".BA"; break;
+			case Modifier::X: std::cout << ".X"; break;
+			case Modifier::I: std::cout << ".I"; break;
+			case Modifier::F: std::cout << ".F";
+			}
+			break;
+		case ID::OPC:
+			switch (static_cast<Opcode>(std::get<1>(t)))
+			{
+			case Opcode::DAT: std::cout << "DAT"; break;
+			case Opcode::MOV: std::cout << "MOV"; break;
+			case Opcode::ADD: std::cout << "ADD"; break;
+			case Opcode::SUB: std::cout << "SUB"; break;
+			case Opcode::MUL: std::cout << "MUL"; break;
+			case Opcode::DIV: std::cout << "DIV"; break;
+			case Opcode::MOD: std::cout << "MOD"; break;
+			case Opcode::JMP: std::cout << "JMP"; break;
+			case Opcode::JMZ: std::cout << "JMZ"; break;
+			case Opcode::JMN: std::cout << "JMN"; break;
+			case Opcode::DJN: std::cout << "DJN"; break;
+			case Opcode::CMP: std::cout << "CMP"; break;
+			case Opcode::SLT: std::cout << "STL"; break;
+			case Opcode::SPL: std::cout << "SPL"; break;
+			case Opcode::ORG: std::cout << "ORG"; break;
+			case Opcode::EQU: std::cout << "EQU"; break;
+			case Opcode::END: std::cout << "END"; break;
+			}
+			break;
 		case ID::FE: goto cont;
-		default: std::cout << "Implement me: " << (int)std::get<0>(t);
+		default: std::cout << "Implement me (main): " << (int)std::get<0>(t);
 		}
 		std::cout << std::endl;
 	}

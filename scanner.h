@@ -2,7 +2,65 @@
 #include "grammar.h"
 #include "symbolArray.h"
 
-bool myIsalnum(int c) { return isalnum(c) || c == '_'; }
+bool myIsalnum(int c) { 
+	auto res = isalnum(c) || c == '_';
+	return res;
+}
+
+//   _  __   _                      
+//  / ) )_) / `    _ _   _   _  _ _ 
+// (_/ /   (_.    ) ) ) (_( (_ ) (_)
+#define genOPC(A, KEY, NAlN, ...)							\
+case #@A:													\
+{															\
+	KEY;													\
+	if (takeChar() && myIsalnum(cc))						\
+		switch (toupper(cc))								\
+		{													\
+			__VA_ARGS__										\
+						 									\
+		default:											\
+			readAlnum();									\
+		}													\
+	else													\
+	{														\
+		if (cc != EOF)										\
+			putBack();										\
+		putVal(ID::REF, sa->insert<TYPES::LABEL>(key, key));\
+	}														\
+	break;													\
+}
+// starnard OPC
+#define OPC(A, ...) genOPC(A, keyInitClear, readAlnum();, __VA_ARGS__)
+// nested OPC
+#define nOPC(A, ...) genOPC(A, key += static_cast<char>(cc), readAlnum();, __VA_ARGS__)
+// is whole OPC?
+#define wOPC(A,B,C) 										\
+if (!takeChar() || !myIsalnum(cc))							\
+{															\
+	if (cc != EOF)											\
+		putBack();											\
+	putVal(ID::OPC, static_cast<refId>(Opcode::A##B##C));	\
+}															\
+else														\
+	readAlnum();
+
+#define OPCs(A,B,C) 										\
+case #@B:													\
+	key += static_cast<char>(cc);							\
+	if (takeChar() && toupper(cc) == #@C)					\
+	{														\
+		key += static_cast<char>(cc);						\
+		wOPC(A,B,C)											\
+	}														\
+	else													\
+		readAlnum();										\
+	break;
+//   _  __   _                          ___      __  
+//  / ) )_) / `    _ _   _   _  _ _     )_  )\ ) ) ) 
+// (_/ /   (_.    ) ) ) (_( (_ ) (_)   (__ (  ( /_/  
+                                                  
+                                                                            
 
 template <int resultSize = 8096>
 class scanner
@@ -12,12 +70,14 @@ public:
 
 	std::unique_ptr<resArray> scan();
 
-	scanner(std::streambuf &input, symbolArray *sa);
+	scanner(std::streambuf &i, symbolArray *sa);
 virtual ~scanner();
 
 private:
 	bool takeChar() { return (cc = input.sbumpc()) != EOF && ++column; }
+	void putBack() { input.sputbackc(static_cast<char>(cc)); }
 	void putVal(ID id, refId val = -1) { (*result)[index] = std::move(std::make_tuple(id, val)); }
+	void putMod(Modifier mod) { putVal(ID::MODYFIERS, static_cast<refId>(mod)); }
 
 	template <typename SeqEl, typename Flush, typename Conv>
 	void readSequence(SeqEl se, Flush f, Conv c = [] {});
@@ -26,7 +86,7 @@ private:
 	{
 		readSequence(
 			myIsalnum,
-			[this] { putVal(ID::REF, sa->insert<TYPES::LABEL>(key, Label(key))); }, [] {}
+			[this] { putVal(ID::REF, sa->insert<TYPES::LABEL>(key, key)); }, [] {}
 		);
 	}
 
@@ -43,6 +103,9 @@ private:
 	std::streambuf::int_type cc;
 };
 
+#define keyInitClear ScopeGuard kg([this] { key = ""; }, [this] { key = static_cast<char>(cc); });
+#define keyClear ScopeGuard kg([this] { key = ""; });
+
 template<int resultSize>
 std::unique_ptr<typename scanner<resultSize>::resArray> scanner<resultSize>::scan()
 {
@@ -51,7 +114,7 @@ std::unique_ptr<typename scanner<resultSize>::resArray> scanner<resultSize>::sca
 
 	while (takeChar() && index < resultSize)
 	{
-		switch (cc)
+		switch (toupper(cc))
 		{
 			case '+': putVal(ID::PLUS);  break;
 			case '-': putVal(ID::MINUS); break;
@@ -65,18 +128,54 @@ std::unique_ptr<typename scanner<resultSize>::resArray> scanner<resultSize>::sca
 			case '@':
 			case '<':
 			case '>': putVal(ID::MODE, cc); break;
-			case 'e': 
-				if (takeChar() && myIsalnum(cc))
-				{
-					key = 'e';
-					readAlnum();
-				}
+
+			case '.':
+				if(takeChar())
+					switch (toupper(cc))
+					{
+					case 'F': putMod(Modifier::F); break;
+					case 'I': putMod(Modifier::I); break;
+					case 'X': putMod(Modifier::X); break;
+					case 'A':
+						if (takeChar() && toupper(cc) == 'B')
+							putMod(Modifier::AB);
+						else
+						{
+							if (cc != EOF)
+								putBack();
+							putMod(Modifier::A);
+						}
+						break;
+					case 'B':
+						if (takeChar() && toupper(cc) == 'A')
+							putMod(Modifier::BA);
+						else
+						{
+							if (cc != EOF)
+								putBack();
+							putMod(Modifier::B);
+						}
+						break;
+					default:
+						putBack();
+						const auto &errorMsg = e.mkError(ERROR::MODIFIER_EXPECTED, std::string(), line, column);
+						putVal(ID::REF, sa->insert<TYPES::ERROR>(errorMsg, errorMsg));
+					}
 				else
 				{
-					input.sputbackc(static_cast<char>(cc));
-					putVal(ID::MODE, 'e');
+					const auto &errorMsg = e.mkError(ERROR::MODIFIER_EXPECTED, std::string(), line, column);
+					putVal(ID::REF, sa->insert<TYPES::ERROR>(errorMsg, errorMsg));
 				}
 				break;
+
+				OPC(A, OPCs(A, D, D););
+				OPC(C, OPCs(C, M, P););
+				OPC(O, OPCs(O, R, G););
+				OPC(E, OPCs(E, Q, U); OPCs(E, N, D));
+				OPC(D, OPCs(D, A, T); OPCs(D, I, V); OPCs(D, J, N););
+				OPC(M, nOPC(O, case 'V': wOPC(M, O, V) break; case 'D': wOPC(M, O, D) break;); OPCs(M, U, L););
+				OPC(S, OPCs(S, U, B); OPCs(S, L, T); OPCs(S, P, L););
+				OPC(J, nOPC(M, case 'P': wOPC(J, M, P) break; case 'Z': wOPC(J, M, Z) break; case 'N': OPCs(J, M, N) break;));
 			default :
 				if (isdigit(cc))
 				{
@@ -100,16 +199,18 @@ std::unique_ptr<typename scanner<resultSize>::resArray> scanner<resultSize>::sca
 							putVal(ID::REF, sa->insert<TYPES::NUMBER>(key, WholeNumber(number)));
 						else
 						{
-							auto &errorMsg = e.mkError(ERROR::CONSTANT_TOO_BIG, key, line, column);
-							putVal(ID::REF, sa->insert<TYPES::ERROR>(key, errorMsg));
+							const auto &errorMsg = e.mkError(ERROR::CONSTANT_TOO_BIG, key, line, column);
+							putVal(ID::REF, sa->insert<TYPES::ERROR>(errorMsg, errorMsg));
 						}
 					};
 
+					keyClear;
 					readSequence(isdigit, flush, convert);
 					break;
 				}
 				if (isalpha(cc) || cc == '_')
 				{
+					keyClear;
 					readAlnum();
 					break;
 				}
@@ -147,10 +248,9 @@ inline void scanner<resultSize>::readSequence(SeqEl se, Flush f, Conv c)
 		c();
 	} while (takeChar() && se(cc));
 	if (cc != EOF)
-		input.sputbackc(static_cast<char>(cc));
+		putBack();
 
 	f();
 
 	column += key.length() - 1;
-	key = "";
 }

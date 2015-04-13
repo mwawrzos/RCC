@@ -22,9 +22,9 @@ class symbolArray : public std::vector<entry>
 public:
 
 	template <TYPES T, class V>
-	refId insert(const std::string &key, V &val);
+	refId insert(const std::string &key, const V &val);
 	template <>
-	refId insert<TYPES::NUMBER>(const std::string &key, WholeNumber &val);
+	refId insert<TYPES::NUMBER>(const std::string &key, const WholeNumber &val);
 
 	symbolArray();
 	~symbolArray();
@@ -41,7 +41,7 @@ std::ostream &operator<<(std::ostream &out, const symbolArray &sa);
 
 
 template<TYPES T, class V>
-refId symbolArray::insert(const std::string &key, V &val)
+refId symbolArray::insert(const std::string &key, const V &val)
 {
 	auto id = symbolRefs[key];
 
@@ -52,7 +52,7 @@ refId symbolArray::insert(const std::string &key, V &val)
 }
 
 template<>
-refId symbolArray::insert<TYPES::NUMBER, WholeNumber>(const std::string &key, WholeNumber &n)
+refId symbolArray::insert<TYPES::NUMBER, WholeNumber>(const std::string &key, const WholeNumber &n)
 {
 	auto id = symbolRefs[key];
 
