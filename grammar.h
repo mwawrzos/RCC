@@ -18,10 +18,12 @@ enum class ID
 
 enum class TYPES
 {
+	MOCK,
 	NUMBER,
 	LABEL,
 	ERROR,
-	MODE
+	MODE,
+	COMMENT
 };
 
 #define MOV_CONSTR(A, B, FIELD) public : A(std::unique_ptr<B> &arg) : FIELD(std::move(arg)) {}
@@ -124,13 +126,7 @@ public:
 		next(std::move(next)) {}
 };
 
-class Comment {};
-class CommentNonEmpty : public Comment
-{
-	std::string content;
-public:
-	CommentNonEmpty(std::string &&content);
-};
+typedef std::string Comment;
 
 class Instruction
 {

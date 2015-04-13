@@ -43,7 +43,7 @@ std::ostream &operator<<(std::ostream &out, const symbolArray &sa);
 template<TYPES T, class V>
 refId symbolArray::insert(const std::string &key, const V &val)
 {
-	auto id = symbolRefs[key];
+	auto &id = symbolRefs[key];
 
 	if (id) return id;
 

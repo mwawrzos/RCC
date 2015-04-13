@@ -5,6 +5,7 @@ typedef size_t refId;
 
 symbolArray::symbolArray()
 {
+	push_back(std::make_tuple(TYPES::MOCK, -1));
 }
 
 

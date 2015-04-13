@@ -24,8 +24,7 @@ case #@A:													\
 		}													\
 	else													\
 	{														\
-		if (cc != EOF)										\
-			putBack();										\
+		putBack();											\
 		putVal(ID::REF, sa->insert<TYPES::LABEL>(key, key));\
 	}														\
 	break;													\
@@ -38,8 +37,7 @@ case #@A:													\
 #define wOPC(A,B,C) 										\
 if (!takeChar() || !myIsalnum(cc))							\
 {															\
-	if (cc != EOF)											\
-		putBack();											\
+	putBack();												\
 	putVal(ID::OPC, static_cast<refId>(Opcode::A##B##C));	\
 }															\
 else														\
@@ -74,8 +72,8 @@ public:
 virtual ~scanner();
 
 private:
-	bool takeChar() { return (cc = input.sbumpc()) != EOF && ++column; }
-	void putBack() { input.sputbackc(static_cast<char>(cc)); }
+	bool takeChar() { return cc = input.sbumpc(), ++column, true; }
+	void putBack() { if(cc != EOF) input.sputbackc(static_cast<char>(cc)); }
 	void putVal(ID id, refId val = -1) { (*result)[index] = std::move(std::make_tuple(id, val)); }
 	void putMod(Modifier mod) { putVal(ID::MODYFIERS, static_cast<refId>(mod)); }
 
@@ -112,7 +110,8 @@ std::unique_ptr<typename scanner<resultSize>::resArray> scanner<resultSize>::sca
 	result = std::make_unique<resArray>();
 	index = 0;
 
-	while (takeChar() && index < resultSize)
+	bool eof = false;
+	while (takeChar() && index < resultSize && !eof)
 	{
 		switch (toupper(cc))
 		{
@@ -141,8 +140,7 @@ std::unique_ptr<typename scanner<resultSize>::resArray> scanner<resultSize>::sca
 							putMod(Modifier::AB);
 						else
 						{
-							if (cc != EOF)
-								putBack();
+							putBack();
 							putMod(Modifier::A);
 						}
 						break;
@@ -151,8 +149,7 @@ std::unique_ptr<typename scanner<resultSize>::resArray> scanner<resultSize>::sca
 							putMod(Modifier::BA);
 						else
 						{
-							if (cc != EOF)
-								putBack();
+							putBack();
 							putMod(Modifier::B);
 						}
 						break;
@@ -168,6 +165,27 @@ std::unique_ptr<typename scanner<resultSize>::resArray> scanner<resultSize>::sca
 				}
 				break;
 
+			case EOF: eof = true;
+			case '\n':
+			case '\r':
+				putVal(ID::REF, sa->insert<TYPES::COMMENT>(std::string("\n"), std::string()));
+				break;
+			case ';':
+			{
+				keyClear;
+				readSequence(
+					[](int c) { return c != '\n' && c != '\r' && c != EOF; },
+					[this] { putVal(ID::REF, sa->insert<TYPES::COMMENT>(key, key)); },
+					[] {}
+				);
+				break;
+			}
+				
+
+//    _  __   _                      
+//   / ) )_) / `   ( _   ) _   _ ( _ 
+//  (_/ /   (_.     )_) ( (_) (_  )\ 
+                                 
 				OPC(A, OPCs(A, D, D););
 				OPC(C, OPCs(C, M, P););
 				OPC(O, OPCs(O, R, G););
@@ -243,12 +261,12 @@ inline void scanner<resultSize>::readSequence(SeqEl se, Flush f, Conv c)
 {
 	do
 	{
-		key += static_cast<char>(cc);
+		if (cc != EOF)
+			key += static_cast<char>(cc);
 
 		c();
 	} while (takeChar() && se(cc));
-	if (cc != EOF)
-		putBack();
+	putBack();
 
 	f();
 
