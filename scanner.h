@@ -73,7 +73,7 @@ virtual ~scanner();
 
 private:
 	bool takeChar() { return cc = input.sbumpc(), ++column, true; }
-	void putBack() { if(cc != EOF) input.sputbackc(static_cast<char>(cc)); }
+	void putBack() { if(cc != EOF) --column, input.sputbackc(static_cast<char>(cc)); }
 	void putVal(ID id, refId val = -1) { (*result)[index] = std::move(std::make_tuple(id, val)); }
 	void putMod(Modifier mod) { putVal(ID::MODYFIERS, static_cast<refId>(mod)); }
 
@@ -107,11 +107,16 @@ private:
 template<int resultSize>
 std::unique_ptr<typename scanner<resultSize>::resArray> scanner<resultSize>::scan()
 {
+	if (takeChar() && cc != EOF)
+		putBack();
+	else
+		return nullptr;
+
 	result = std::make_unique<resArray>();
 	index = 0;
 
 	bool eof = false;
-	while (takeChar() && index < resultSize && !eof)
+	while (takeChar() && index < resultSize - 1 && !eof)
 	{
 		switch (toupper(cc))
 		{
@@ -122,6 +127,7 @@ std::unique_ptr<typename scanner<resultSize>::resArray> scanner<resultSize>::sca
 			case '%': putVal(ID::MOD);   break;
 			case '(': putVal(ID::OPAR);  break;
 			case ')': putVal(ID::CPAR);  break;
+			case ',': putVal(ID::COMMA); break;
 			case '#': 
 			case '$':
 			case '@':
@@ -129,6 +135,7 @@ std::unique_ptr<typename scanner<resultSize>::resArray> scanner<resultSize>::sca
 			case '>': putVal(ID::MODE, cc); break;
 
 			case '.':
+#pragma region
 				if(takeChar())
 					switch (toupper(cc))
 					{
@@ -155,19 +162,30 @@ std::unique_ptr<typename scanner<resultSize>::resArray> scanner<resultSize>::sca
 						break;
 					default:
 						putBack();
-						const auto &errorMsg = e.mkError(ERROR::MODIFIER_EXPECTED, std::string(), line, column);
-						putVal(ID::REF, sa->insert<TYPES::ERROR>(errorMsg, errorMsg));
+						const auto &errorMsg = e.mkError(ERROR::MODIFIER_EXPECTED, std::string(), line, column - 1);
+						putVal(ID::REF, sa->insert<TYPES::ERROR>(std::get<0>(errorMsg), errorMsg));
 					}
 				else
 				{
-					const auto &errorMsg = e.mkError(ERROR::MODIFIER_EXPECTED, std::string(), line, column);
-					putVal(ID::REF, sa->insert<TYPES::ERROR>(errorMsg, errorMsg));
+					const auto &errorMsg = e.mkError(ERROR::MODIFIER_EXPECTED, std::string(), line, column - 1);
+					putVal(ID::REF, sa->insert<TYPES::ERROR>(std::get<0>(errorMsg), errorMsg));
 				}
 				break;
-
+#pragma endregion
+			case ' ':
+			case '\t': putVal(ID::WSPC, static_cast<char>(cc)); break;
+				
 			case EOF: eof = true;
 			case '\n':
+				if (takeChar() && cc != '\r')
+					putBack();
 			case '\r':
+				if (takeChar() && cc != '\n')
+					putBack();
+				
+				column = 0;
+				++line;
+
 				putVal(ID::REF, sa->insert<TYPES::COMMENT>(std::string("\n"), std::string()));
 				break;
 			case ';':
@@ -178,6 +196,12 @@ std::unique_ptr<typename scanner<resultSize>::resArray> scanner<resultSize>::sca
 					[this] { putVal(ID::REF, sa->insert<TYPES::COMMENT>(key, key)); },
 					[] {}
 				);
+				if (!takeChar())
+					eof = true;
+
+				column = 0;
+				++line;
+
 				break;
 			}
 				
@@ -213,12 +237,12 @@ std::unique_ptr<typename scanner<resultSize>::resArray> scanner<resultSize>::sca
 					};
 					auto flush = [&number, this]
 					{
-						if (number > 0)
+						if (number >= 0)
 							putVal(ID::REF, sa->insert<TYPES::NUMBER>(key, WholeNumber(number)));
 						else
 						{
-							const auto &errorMsg = e.mkError(ERROR::CONSTANT_TOO_BIG, key, line, column);
-							putVal(ID::REF, sa->insert<TYPES::ERROR>(errorMsg, errorMsg));
+							const auto &errorMsg = e.mkError(ERROR::CONSTANT_TOO_BIG, key, line, column - key.length());
+							putVal(ID::REF, sa->insert<TYPES::ERROR>(std::get<0>(errorMsg), errorMsg));
 						}
 					};
 
@@ -232,6 +256,8 @@ std::unique_ptr<typename scanner<resultSize>::resArray> scanner<resultSize>::sca
 					readAlnum();
 					break;
 				}
+				auto errorMsg = e.mkError(ERROR::SYNTAX_ERROR, std::string(1, static_cast<char>(cc)), line, column - 1);
+				putVal(ID::REF, sa->insert<TYPES::ERROR>(std::get<0>(errorMsg), errorMsg));
 		}
 		++index;
 	}
@@ -269,6 +295,4 @@ inline void scanner<resultSize>::readSequence(SeqEl se, Flush f, Conv c)
 	putBack();
 
 	f();
-
-	column += key.length() - 1;
 }

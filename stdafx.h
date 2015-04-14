@@ -16,6 +16,7 @@
 #include <chrono>
 
 #include <functional>
+#include <algorithm>
 
 class ScopeGuard
 {
@@ -24,3 +25,6 @@ public:
 	ScopeGuard(std::function<void()> exit, std::function<void()> enter = [] {}) : exit(exit) { enter(); }
 	~ScopeGuard() { exit(); }
 };
+
+
+void encode(std::string& data);

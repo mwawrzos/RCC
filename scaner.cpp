@@ -16,7 +16,6 @@ int main(int argc, char **argv)
 		system("pause>>null");
 		return 1;
 	}
-	std::cout << isalnum('a') << isalnum('1') << isalnum('_') << isalnum('b') << isalnum('2') << std::endl;
 
 	std::filebuf buf;
 	buf.open(argv[1], std::ios::in);
@@ -25,64 +24,132 @@ int main(int argc, char **argv)
 	auto sa = std::make_unique<symbolArray>();
 
 	scanner<> a(buf, sa.get());
-	auto chunk = a.scan();
 
-	for (auto t : *chunk)
+#define Gen(ARG, CLASS, VAL) case ARG: std::cout << "<span class=\"" #CLASS "\">" << VAL << "</span>"; break;
+
+	std::cout <<
+		R"(<!DOCTYPE html>
+<html>
+<body>
+<pre>
+<style>
+
+span.operator {
+	color: goldenrod;
+}
+
+span.label {
+	color: dodgerblue
+}
+
+span.opc {
+	color: black;
+	font-weight: bold;
+}
+
+span.comment {
+	color: green;
+}
+
+span.number {
+	color: mediumblue;
+}
+
+span.mode {
+	color: chocolate
+}
+
+span.prarent {
+	color: mediumblue
+}
+
+span.modifier {
+	color: indigo
+}
+
+abbr {
+	color: red
+}
+</style>
+)";
+
+	std::unique_ptr<scanner<>::resArray> chunk;
+
+	while ((chunk = a.scan()))
 	{
-		switch (std::get<0>(t))
+		for (auto t : *chunk)
 		{
-		case ID::DIV: std::cout << "/"; break;
-		case ID::MUL: std::cout << "*"; break;
-		case ID::PLUS: std::cout << "+"; break;
-		case ID::MINUS: std::cout << "-"; break;
-		case ID::MOD: std::cout << "%"; break;
-		case ID::CPAR: std::cout << ")"; break;
-		case ID::OPAR: std::cout << "("; break;
-		case ID::REF: std::cout << (*sa)[std::get<1>(t)]; break;
-		case ID::MODE: std::cout << (char)(std::get<1>(t)); break;
-		case ID::MODYFIERS:
-			switch (static_cast<Modifier>(std::get<1>(t)))
+			switch (std::get<0>(t))
 			{
-			case Modifier::A: std::cout << ".A"; break;
-			case Modifier::AB: std::cout << ".AB"; break;
-			case Modifier::B: std::cout << ".B"; break;
-			case Modifier::BA: std::cout << ".BA"; break;
-			case Modifier::X: std::cout << ".X"; break;
-			case Modifier::I: std::cout << ".I"; break;
-			case Modifier::F: std::cout << ".F";
-			}
-			break;
-		case ID::OPC:
-			switch (static_cast<Opcode>(std::get<1>(t)))
+			case ID::REF: std::cout << (*sa)[std::get<1>(t)]; break;
+				Gen(ID::DIV, operator, "\\");
+				Gen(ID::MUL, operator, "*");
+				Gen(ID::PLUS, operator, "+");
+				Gen(ID::MINUS, operator, "-");
+				Gen(ID::MOD, operator, "%");
+				Gen(ID::CPAR, prarent, ")");
+				Gen(ID::OPAR, prarent, "(");
+				Gen(ID::COMMA, prarent, ",");
+			case ID::MODE:
 			{
-			case Opcode::DAT: std::cout << "DAT"; break;
-			case Opcode::MOV: std::cout << "MOV"; break;
-			case Opcode::ADD: std::cout << "ADD"; break;
-			case Opcode::SUB: std::cout << "SUB"; break;
-			case Opcode::MUL: std::cout << "MUL"; break;
-			case Opcode::DIV: std::cout << "DIV"; break;
-			case Opcode::MOD: std::cout << "MOD"; break;
-			case Opcode::JMP: std::cout << "JMP"; break;
-			case Opcode::JMZ: std::cout << "JMZ"; break;
-			case Opcode::JMN: std::cout << "JMN"; break;
-			case Opcode::DJN: std::cout << "DJN"; break;
-			case Opcode::CMP: std::cout << "CMP"; break;
-			case Opcode::SLT: std::cout << "STL"; break;
-			case Opcode::SPL: std::cout << "SPL"; break;
-			case Opcode::ORG: std::cout << "ORG"; break;
-			case Opcode::EQU: std::cout << "EQU"; break;
-			case Opcode::END: std::cout << "END"; break;
+				std::string mode;
+				switch (std::get<1>(t))
+				{
+				case '<': mode = "&lt;"; break;
+				case '>': mode = "&gt;"; break;
+				case '#': mode = "#";	 break;
+				case '$': mode = "$";	 break;
+				case '@': mode = "@";	 break;
+				}
+				std::cout << R"(<span class="mode">)" << mode << "</span>";
+				break;
 			}
-			break;
-		case ID::FE: goto cont;
-		default: std::cout << "Implement me (main): " << (int)std::get<0>(t);
+			Gen(ID::WSPC, wspc, (char) (std::get<1>(t)));
+			case ID::MODYFIERS:
+				switch (static_cast<Modifier>(std::get<1>(t)))
+				{
+					Gen(Modifier::A, modifier, ".A");
+					Gen(Modifier::AB, modifier, ".AB");
+					Gen(Modifier::B, modifier, ".B");
+					Gen(Modifier::BA, modifier, ".BA");
+					Gen(Modifier::X, modifier, ".X");
+					Gen(Modifier::I, modifier, ".I");
+					Gen(Modifier::F, modifier, ".F");
+				}
+				break;
+			case ID::OPC:
+				switch (static_cast<Opcode>(std::get<1>(t)))
+				{
+					Gen(Opcode::DAT, opc, "DAT");
+					Gen(Opcode::MOV, opc, "MOV");
+					Gen(Opcode::ADD, opc, "ADD");
+					Gen(Opcode::SUB, opc, "SUB");
+					Gen(Opcode::MUL, opc, "MUL");
+					Gen(Opcode::DIV, opc, "DIV");
+					Gen(Opcode::MOD, opc, "MOD");
+					Gen(Opcode::JMP, opc, "JMP");
+					Gen(Opcode::JMZ, opc, "JMZ");
+					Gen(Opcode::JMN, opc, "JMN");
+					Gen(Opcode::DJN, opc, "DJN");
+					Gen(Opcode::CMP, opc, "CMP");
+					Gen(Opcode::SLT, opc, "STL");
+					Gen(Opcode::SPL, opc, "SPL");
+					Gen(Opcode::ORG, opc, "ORG");
+					Gen(Opcode::EQU, opc, "EQU");
+					Gen(Opcode::END, opc, "END");
+				}
+				break;
+			case ID::FE: goto cont;
+			default: std::cout << "Implement me (main): " << (int) std::get<0>(t);
+			}
 		}
-		std::cout << std::endl;
+	cont:;
 	}
-	cont:
+	std::cout <<
+R"(</pre>
+</body>
+</html>
+)";
 
-	auto start = std::chrono::high_resolution_clock::now();
-	while (buf.sbumpc() != EOF);
-	auto test1 = std::chrono::high_resolution_clock::now() - start;
 	system("pause>>null");
 }

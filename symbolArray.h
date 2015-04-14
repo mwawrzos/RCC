@@ -7,10 +7,12 @@ union Val {
 	WholeNumber number;
 	Token *token;
 	std::string *string;
+	std::tuple<std::string, std::string> *errorMsg;
 
 	Val(WholeNumber number) : number(number) {}
 	Val(Token *token) : token(token) {}
 	Val(std::string *string) : string(string) {}
+	Val(std::tuple<std::string, std::string> *errorMsg) : errorMsg(errorMsg) {}
 };
 
 typedef Val val;
@@ -36,9 +38,6 @@ private:
 };
 
 std::ostream &operator<<(std::ostream &out, const entry &entry);
-std::ostream &operator<<(std::ostream &out, const symbolArray &sa);
-//std::ostream &operator<<(std::ostream &out, const std::tuple<ID, refId> t);
-
 
 template<TYPES T, class V>
 refId symbolArray::insert(const std::string &key, const V &val)

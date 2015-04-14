@@ -2,6 +2,7 @@
 
 enum class ID
 {
+	COMMA,
 	OPC,
 	REF,
 	PLUS,
@@ -13,7 +14,8 @@ enum class ID
 	CPAR,
 	MODE,
 	FE,
-	MODYFIERS
+	MODYFIERS,
+	WSPC
 };
 
 enum class TYPES
